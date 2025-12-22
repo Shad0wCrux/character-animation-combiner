@@ -21,6 +21,9 @@ canvas {
   background-color: #304ffe !important;
   cursor: pointer;
 }
+.animation-item--playing {
+  background-color: #304ffe !important;
+}
 
 .preloader-box {
   position: fixed;
@@ -43,3 +46,51 @@ canvas {
 .circle-clipper .circle {
   border-width: 98px;
 }
+
+/* Lighting controls styling */
+.lighting-card {
+  background: #2e2e2e;
+  color: #fff;
+  padding: 12px;
+}
+
+.lighting-collapsible {
+  border: none;
+  box-shadow: none;
+  margin: 0;
+}
+
+.lighting-header {
+  background: transparent;
+  color: #fff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.lighting-body {
+  padding: 12px 0 0 0;
+}
+
+.lighting-block {
+  margin-bottom: 14px;
+}
+
+.lighting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+  font-size: 0.95rem;
+}
+
+.lighting-range {
+  margin: 0;
+}
+
+.lighting-actions {
+  margin-top: 10px;
+}
+
+.lighting-reset {
+  background: #26a69a;
+}
+
