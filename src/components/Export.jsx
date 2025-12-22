@@ -1,97 +1,89 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
-import { Context as ModalContext } from "../context/ModelContext.jsx";
+import { Context as ModelContext } from "../context/ModelContext.jsx";
 
-const Export = () => {
-  const {
-    state: { mainModel, animations },
-    toggleLoading,
-  } = useContext(ModalContext);
+function saveArrayBuffer(buffer, filename) {
+  const blob = new Blob([buffer], { type: "application/octet-stream" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
 
-  const save = (blob, filename) => {
-    var link = document.createElement("a");
-    link.style.display = "none";
-    document.body.appendChild(link);
-    link.href = URL.createObjectURL(blob);
-    link.download = filename;
-    link.click();
-    toggleLoading();
+export default function Export() {
+  const { state } = useContext(ModelContext);
+  const [busy, setBusy] = useState(false);
+
+  const exportScene = (binary) => {
+    if (!state?.mainModel) return;
+
+    setBusy(true);
+
+    const exporter = new GLTFExporter();
+    exporter.parse(
+      state.mainModel,
+      (result) => {
+        const ts = new Date().getTime();
+        if (binary) {
+          saveArrayBuffer(result, `cac-${ts}.glb`);
+        } else {
+          const output = JSON.stringify(result, null, 2);
+          const blob = new Blob([output], { type: "application/json" });
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(blob);
+          link.download = `cac-${ts}.gltf`;
+          link.click();
+          URL.revokeObjectURL(link.href);
+        }
+        setBusy(false);
+      },
+      (error) => {
+        console.error(error);
+        setBusy(false);
+      },
+      { binary }
+    );
   };
 
-  const saveString = (text, filename) => {
-    save(new Blob([text], { type: "text/plain" }), filename);
-  };
+  console.log("Export sees scene:", state?.mainModel);
 
-  const saveArrayBuffer = (buffer, filename) => {
-    save(new Blob([buffer], { type: "application/octet-stream" }), filename);
-  };
-
-  const exportGLB = () => {
-    toggleLoading();
-    try {
-      var exporter = new GLTFExporter();
-
-      // Parse the input and generate the glTF output
-      exporter.parse(
-        mainModel,
-        function (result) {
-          saveArrayBuffer(result, `cac-${new Date().getTime()}.glb`);
-        },
-        { trs: true, binary: true, animations: animations }
-      );
-    } catch (error) {
-      toggleLoading();
-      alert(
-        "Error: Try deleting the texture, if that does not help, Open an issue on the Github Repo"
-      );
-    }
-  };
-
-  const exportGLTF = () => {
-    try {
-      toggleLoading();
-      var exporter = new GLTFExporter();
-
-      // Parse the input and generate the glTF output
-      exporter.parse(
-        mainModel,
-        function (result) {
-          var output = JSON.stringify(result, null, 2);
-          saveString(output, `cac-${new Date().getTime()}.gltf`);
-        },
-        { trs: true, binary: false, animations: animations }
-      );
-    } catch (error) {
-      toggleLoading();
-      alert(
-        "Error: Try deleting the texture, if that does not help, Open an issue on the Github Repo"
-      );
-    }
-  };
 
   return (
-    <div style={{ height: 100 }}>
-      <h4 className="white-text">Export</h4>
+    <div className="text-white">
+      <div className="border-b border-white/10 bg-neutral-900/60 px-4 py-3">
+        <h2 className="text-lg font-semibold">Export</h2>
+        <p className="mt-1 text-sm text-white/70">
+          Export your combined model as GLTF or GLB.
+        </p>
+      </div>
 
-      <div className="row">
+      <div className="grid grid-cols-1 gap-3 px-4 py-4">
         <button
-          style={{ margin: "0 auto" }}
-          className="waves-effect waves-light btn-large indigo accent-4 col m12 l6"
-          onClick={exportGLTF}
+          type="button"
+          disabled={busy || !state?.mainModel}
+          onClick={() => exportScene(false)}
+          className="inline-flex w-full items-center justify-center bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Export GLTF
         </button>
 
         <button
-          style={{ margin: "0 auto" }}
-          className="waves-effect waves-light btn-large indigo accent-4 col m12 l6"
-          onClick={exportGLB}
+          type="button"
+          disabled={busy || !state?.mainModel}
+          onClick={() => exportScene(true)}
+          className="inline-flex w-full items-center justify-center bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Export GLB
         </button>
+
+        {!state?.scene && (
+          <div className="text-xs text-white/60">
+            Load a model first to enable export.
+          </div>
+        )}
       </div>
     </div>
   );
-};
+}
 
-export default Export;

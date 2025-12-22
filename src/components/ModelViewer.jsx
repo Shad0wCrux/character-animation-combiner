@@ -5,11 +5,15 @@ import setControls from "../helpers/setControls";
 import setLights from "../helpers/setLights";
 import resizeWindow from "../helpers/resizeWindow";
 import loadModel from "../helpers/loadModel";
-import { Context as ModalContext } from "../context/ModelContext";
+import { Context as ModalContext } from "../context/ModelContext.jsx";
 
 
-const ModelViewer = ({ model, fileExt, lighting }) => {
+const ModelViewer = ({ model, fileExt, lighting, bgMode }) => {
   const viewer = useRef(null);
+  const sceneRef = useRef(null);
+  const groundMatRef = useRef(null);
+  const gridMatRef = useRef(null);
+
 
   const hemiRef = useRef(null);
   const rendererRef = useRef(null);
@@ -29,6 +33,7 @@ const ModelViewer = ({ model, fileExt, lighting }) => {
     if (!container) return;
 
     const scene = new THREE.Scene();
+    sceneRef.current = scene;
     const camera = setCamera(container);
 
     let mixer = null;
@@ -37,31 +42,53 @@ const ModelViewer = ({ model, fileExt, lighting }) => {
     // Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     resizeWindow(camera, container, renderer);
-
+    
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     rendererRef.current = renderer;
 
-    // Replace any previous canvas
-    if (container.children.length) container.removeChild(container.lastChild);
+
+    const existingCanvas = container.querySelector("canvas");
+    if (existingCanvas) existingCanvas.remove();
     container.appendChild(renderer.domElement);
 
     // Ground
+    const groundMaterial = new THREE.MeshPhongMaterial({
+        color: 0x999999,
+        depthWrite: false,
+    });
+    groundMatRef.current = groundMaterial;
+
     const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(2000, 2000),
-      new THREE.MeshPhongMaterial({ color: 0x999999, depthWrite: false })
+        new THREE.PlaneGeometry(2000, 2000),
+        groundMaterial
     );
+
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     ground.position.y = -80;
     scene.add(ground);
 
+    
+
     const grid = new THREE.GridHelper(2000, 20, 0x000000, 0x000000);
     grid.material.opacity = 0.2;
     grid.material.transparent = true;
     grid.position.y = -80;
+    gridMatRef.current = grid.material;
     scene.add(grid);
 
-    scene.fog = new THREE.Fog(0xa0a0a0, 200, 1000);
+
+// Standard - Light
     scene.background = new THREE.Color(0xa0a0a0);
+    scene.fog = new THREE.Fog(0xa0a0a0, 200, 1000);
+
+
+// Darker (slate)
+//    scene.background = new THREE.Color(0x111827);
+//    scene.fog = new THREE.Fog(0x111827, 200, 1200);
+
 
     // Lighting & controls
     setControls(camera, container);
@@ -111,15 +138,16 @@ const ModelViewer = ({ model, fileExt, lighting }) => {
     animate();
 
     return () => {
-      window.removeEventListener("resize", onResize);
-      if (rafId) cancelAnimationFrame(rafId);
+        window.removeEventListener("resize", onResize);
+        if (rafId) cancelAnimationFrame(rafId);
 
-      renderer.dispose();
+        renderer.dispose();
 
-      if (container && renderer.domElement.parentNode === container) {
-        container.removeChild(renderer.domElement);
-      }
+        const existingCanvas = container.querySelector("canvas");
+        if (existingCanvas) existingCanvas.remove();
     };
+
+
   }, [model, fileExt]);
 
     useEffect(() => {
@@ -133,7 +161,35 @@ const ModelViewer = ({ model, fileExt, lighting }) => {
         }
     }, [lighting]);
 
-  return <div style={{ height: "90vh" }} ref={viewer} />;
+    useEffect(() => {
+  const scene = sceneRef.current;
+  if (!scene) return;
+
+  const isDark = bgMode === "dark";
+
+  // Background + fog
+  const bgColor = isDark ? 0x111827 : 0xa0a0a0;
+  scene.background = new THREE.Color(bgColor);
+  scene.fog = new THREE.Fog(bgColor, 200, 1000);
+
+  // Ground
+  if (groundMatRef.current) {
+    groundMatRef.current.color.setHex(isDark ? 0x374151 : 0x999999);
+    groundMatRef.current.needsUpdate = true;
+  }
+
+  // Grid
+  if (gridMatRef.current) {
+    // Keep subtle grid; slightly brighter in dark mode
+    gridMatRef.current.opacity = isDark ? 0.25 : 0.2;
+    gridMatRef.current.needsUpdate = true;
+  }
+}, [bgMode]);
+
+
+
+return <div className="h-full w-full" ref={viewer} />;
+
 };
 
 export default ModelViewer;
