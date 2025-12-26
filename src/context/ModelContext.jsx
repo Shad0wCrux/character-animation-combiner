@@ -31,7 +31,7 @@ const modelReducer = (state, action) => {
           (animation) => animation.uuid !== action.payload
         ),
       };
-    case "toogle_loading":
+    case "toggle_loading":
       return { ...state, loading: !state.loading };
     default:
       return state;
@@ -63,7 +63,7 @@ const deleteAnimation = (dispatch) => (animationId) => {
 };
 
 const toggleLoading = (dispatch) => () => {
-  dispatch({ type: "toogle_loading" });
+  dispatch({ type: "toggle_loading" });
 };
 
 export const { Provider, Context } = createDataContext(

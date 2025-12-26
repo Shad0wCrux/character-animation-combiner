@@ -18,33 +18,36 @@ export default function Export() {
   const exportScene = (binary) => {
     if (!state?.mainModel) return;
 
-    setBusy(true);
+  setBusy(true);
 
-    const exporter = new GLTFExporter();
-    exporter.parse(
-      state.mainModel,
-      (result) => {
-        const ts = new Date().getTime();
-        if (binary) {
-          saveArrayBuffer(result, `cac-${ts}.glb`);
-        } else {
-          const output = JSON.stringify(result, null, 2);
-          const blob = new Blob([output], { type: "application/json" });
-          const link = document.createElement("a");
-          link.href = URL.createObjectURL(blob);
-          link.download = `cac-${ts}.gltf`;
-          link.click();
-          URL.revokeObjectURL(link.href);
-        }
-        setBusy(false);
-      },
-      (error) => {
-        console.error(error);
-        setBusy(false);
-      },
-      { binary }
-    );
-  };
+  const exporter = new GLTFExporter();
+  exporter.parse(
+    state.mainModel,
+    (result) => {
+      const ts = new Date().getTime();
+      if (binary) {
+        saveArrayBuffer(result, `cac-${ts}.glb`);
+      } else {
+        const output = JSON.stringify(result, null, 2);
+        const blob = new Blob([output], { type: "application/json" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `cac-${ts}.gltf`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+      }
+      setBusy(false);
+    },
+    (error) => {
+      console.error(error);
+      setBusy(false);
+    },
+    {
+      binary,
+      animations: state.animations,
+    }
+  );
+};
 
   console.log("Export sees scene:", state?.mainModel);
 
